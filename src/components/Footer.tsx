@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Instagram, Facebook, Twitter, MapPin, Phone, Mail, ArrowRight } from 'lucide-react';
+import { Instagram, Facebook, MapPin, Phone, Mail, ArrowRight } from 'lucide-react';
 import { HOTEL_INFO } from '@/data/hotelData';
 
 const Footer = () => {

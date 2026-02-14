@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, useScroll, useTransform, useInView } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { 
-  MapPin, Phone, ArrowRight, ChevronLeft, ChevronRight,
+  Phone, ArrowRight, ChevronRight,
   Star, Wifi, Car, Utensils, Coffee, Sparkles, Clock,
-  Calendar, Users, Bed, Check
+  Calendar, Users, Bed
 } from 'lucide-react';
 import { HOTEL_INFO, ROOMS, TESTIMONIALS, GALLERY_IMAGES, NEARBY_ATTRACTIONS } from '@/data/hotelData';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel';

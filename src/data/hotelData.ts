@@ -3,10 +3,10 @@ import hero2 from "../assets/hero2.jpeg";
 import hero3 from "../assets/hero3.jpeg";
 import hero4 from "../assets/hero4.jpeg";
 import banner from "../assets/Banner.jpeg";
-import toplobby from "../assets/toplobby.jpeg";
-import aminities from "../assets/aminities.jpeg";
-import Restaurantbest from "../assets/Restaurantbest.jpeg";
-import Restaurant from "../assets/Restaurant.jpeg";
+import toplobby from "../assets/toplobby.jpg";
+import aminities from "../assets/aminities.jpg";
+import Restaurantbest from "../assets/Restaurantbest.jpg";
+import Restaurant from "../assets/Restaurant.jpg";
 
 import sd1 from "../assets/hero2.jpeg";
 import sd2 from "../assets/sd1.jpeg";

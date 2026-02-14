@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 
 const Booking = () => {
   const [step, setStep] = useState(1);
-  const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
+  const [selectedRoom, _setSelectedRoom] = useState<string | null>(null);
   const [bookingData, setBookingData] = useState({
     checkIn: '',
     checkOut: '',
@@ -21,11 +21,7 @@ const Booking = () => {
     specialRequests: ''
   });
 
-  const handleRoomSelect = (roomId: string) => {
-    setSelectedRoom(roomId);
-    setStep(2);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

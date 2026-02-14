@@ -6,7 +6,7 @@ import {
   Coffee, Utensils, Wind, Shield, Sparkles,
   Calendar, Phone, ChevronLeft, ChevronRight, X
 } from 'lucide-react';
-import { ROOMS, HOTEL_INFO } from '@/data/hotelData';
+import { ROOMS } from '@/data/hotelData';
 import emailjs from "@emailjs/browser";
 import { toast } from "sonner";
 import { Mail } from 'lucide-react';
