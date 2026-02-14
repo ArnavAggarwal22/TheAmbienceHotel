@@ -143,12 +143,12 @@ export const BANQUET = {
   name: "Grand Banquet Hall",
   price: "Custom Quote",
   size: "3000 sq ft",
-  capacity: "120 Guests",
+  capacity: "100 Guests",
   image: b1,
   gallery: [b1, b2, b3, b4],
 
-  features: ["120 Guest Capacity", "Catering Service", "Audio/Visual Equipment", "Custom Decor", "Ample Parking"],
-  description: "Make your special occasions truly memorable in our Grand Banquet Hall. With a capacity of up to 120 guests, this elegant 3000 sq ft venue is perfect for weddings, corporate events, birthday celebrations, and more. Our dedicated event planning team ensures every detail is perfect.",
+  features: ["100 Guest Capacity", "Catering Service", "Audio/Visual Equipment", "Custom Decor", "Ample Parking"],
+  description: "Make your special occasions truly memorable in our Grand Banquet Hall. With a capacity of up to 100 guests, this elegant 3000 sq ft venue is perfect for weddings, corporate events, birthday celebrations, and more. Our dedicated event planning team ensures every detail is perfect.",
   amenities: [
     "Stage Setup",
     "Dance Floor",

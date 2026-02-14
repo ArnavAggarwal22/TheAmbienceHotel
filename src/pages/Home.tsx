@@ -7,7 +7,7 @@ import {
   Calendar, Users, Bed
 } from 'lucide-react';
 import { HOTEL_INFO, ROOMS, TESTIMONIALS, GALLERY_IMAGES, NEARBY_ATTRACTIONS } from '@/data/hotelData';
-import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel';
+import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 
 import hero1 from "../assets/hero1.jpeg";
 import hero2 from "../assets/hero2.jpeg";
@@ -16,6 +16,7 @@ import banner from "../assets/Banner.jpeg";
 import { BANQUET } from "@/data/hotelData";
 import emailjs from "@emailjs/browser";
 import { toast } from "sonner";
+import Autoplay from "embla-carousel-autoplay"
 
 
 
@@ -122,14 +123,7 @@ const Hero = () => {
       </div>
 
       {/* Scroll Indicator */}
-      <motion.div 
-        animate={{ y: [0, 10, 0] }}
-        transition={{ repeat: Infinity, duration: 2 }}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 text-white/50 z-10"
-      >
-        <div className="w-[1px] h-16 bg-gradient-to-b from-transparent via-white to-transparent mx-auto mb-2" />
-        <span className="text-[10px] uppercase tracking-widest">Scroll</span>
-      </motion.div>
+      
     </section>
   );
 };
@@ -438,7 +432,7 @@ const Rooms = () => {
                   Grand Banquet Hall
                 </h3>
                 <p className="text-slate-300 mb-6">
-                  Host your dream wedding, corporate event, or special celebration in our elegant 3000 sq ft banquet hall with capacity for up to 120 guests.
+                  Host your dream wedding, corporate event, or special celebration in our elegant 3000 sq ft banquet hall with capacity for up to 100 guests.
                 </p>
                 <Link 
                   to="/banquet"
@@ -607,7 +601,17 @@ const Testimonials = () => {
         </div>
 
         <div className="relative">
-          <Carousel opts={{ loop: true }} className="relative">
+          <Carousel
+  opts={{ loop: true }}
+  plugins={[
+    Autoplay({
+      delay: 4000, // 4 seconds
+      stopOnInteraction: false,
+    }),
+  ]}
+  className="relative"
+>
+
             <CarouselContent className="flex">
               {TESTIMONIALS.slice(0, 10).map((item, index) => (
                 <CarouselItem key={item.id} className="pl-4 pr-4 md:basis-1/3">
@@ -633,8 +637,7 @@ const Testimonials = () => {
               ))}
             </CarouselContent>
 
-            <CarouselPrevious />
-            <CarouselNext />
+
           </Carousel>
         </div>
       </div>
