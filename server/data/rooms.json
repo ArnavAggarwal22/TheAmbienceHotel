@@ -1,0 +1,27 @@
+[
+  {
+    "id": "deluxe",
+    "name": "Deluxe",
+    "basePrice": 2799,
+    "images": [],
+    "description": "Cozy room",
+    "amenities": [
+      "AC",
+      "TV"
+    ],
+    "maxGuests": 2
+  },
+  {
+    "id": "super-deluxe",
+    "name": "Super Deluxe",
+    "basePrice": 3099,
+    "images": [],
+    "description": "Spacious",
+    "amenities": [
+      "AC",
+      "TV",
+      "Mini Bar"
+    ],
+    "maxGuests": 3
+  }
+]
