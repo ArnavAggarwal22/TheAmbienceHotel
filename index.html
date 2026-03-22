@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Ambience Hotel</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <!-- Start to Jini Assist script -->
+    <script>
+    (function () {
+      var jiniAssist_API = jiniAssist_API || {},
+      jini_LoadStart = new Date();
+
+      let s = document.createElement('script');
+      s.type = 'text/javascript';
+      s.async = true;
+      s.id = 'jini-script-id';
+      s.src = 'https://admin.bookingjini.com/v3/jiniAssist/index.js?api_key=568575f56337808242d8a20985b7a647';
+
+      var x = document.getElementsByTagName('script')[0];
+      s.charset = 'UTF-8';
+      s.setAttribute('Access-Control-Allow-Origin','*');
+      x.parentNode.insertBefore(s, x);
+    })();
+    </script>
+<!-- End of Jini Assist script -->
+
+  </body>
+</html>
