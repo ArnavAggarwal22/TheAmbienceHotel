@@ -10,6 +10,7 @@ import Booking from './pages/Booking';
 import Gallery from './pages/Gallery';
 import NotFound from './pages/NotFound';
 import Login from './pages/admin/Login';
+import Dashboard from './pages/admin/Dashboard';
 import { Toaster } from '@/components/ui/sonner';
 
 
@@ -98,6 +99,7 @@ function AppContent() {
             <Route path="/booking" element={<PageTransition><Booking /></PageTransition>} />
             <Route path="/gallery" element={<PageTransition><Gallery /></PageTransition>} />
             <Route path="/admin/login" element={<PageTransition><Login /></PageTransition>} />
+            <Route path="/admin/dashboard" element={<PageTransition><Dashboard /></PageTransition>} />
             <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
           </Routes>
         </AnimatePresence>
