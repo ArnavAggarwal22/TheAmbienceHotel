@@ -79,6 +79,21 @@ app.post('/rooms', verifyToken, (req, res) => {
   res.json({ ok: true });
 });
 
+app.post('/rooms/update', verifyToken, (req, res) => {
+  const { id, basePrice, name } = req.body;
+  if (!id) return res.status(400).json({ error: 'Room id is required' });
+  const rooms = readJSON(ROOMS_FILE) || [];
+  const idx = rooms.findIndex((r) => r.id === id);
+  if (idx === -1) return res.status(404).json({ error: 'Room not found' });
+  rooms[idx] = {
+    ...rooms[idx],
+    ...(basePrice !== undefined ? { basePrice } : {}),
+    ...(name !== undefined ? { name } : {}),
+  };
+  writeJSON(ROOMS_FILE, rooms);
+  res.json({ ok: true, room: rooms[idx] });
+});
+
 app.delete('/rooms/:id', verifyToken, (req, res) => {
   const rooms = (readJSON(ROOMS_FILE) || []).filter(r => r.id !== req.params.id);
   writeJSON(ROOMS_FILE, rooms);
@@ -94,6 +109,37 @@ app.get('/stats', verifyToken, (req, res) => {
 app.get('/calendar', verifyToken, (req, res) => {
   const calendar = readJSON(CAL_FILE) || { rates: {} };
   res.json(calendar);
+});
+
+app.post('/calendar/update', verifyToken, (req, res) => {
+  const { date, price, roomsLeft, soldOut, applyToAll, roomId } = req.body;
+  if (!date) return res.status(400).json({ error: 'Date is required' });
+
+  const cal = readJSON(CAL_FILE) || { rates: {} };
+  const day = cal.rates[date] || {};
+
+  const updates = {};
+  if (price !== undefined) updates.price = price;
+  if (roomsLeft !== undefined) updates.roomsLeft = roomsLeft;
+  if (soldOut !== undefined) updates.soldOut = soldOut;
+
+  if (applyToAll) {
+    day._applyAll = {
+      ...day._applyAll,
+      ...updates,
+    };
+  } else if (roomId) {
+    day[roomId] = {
+      ...day[roomId],
+      ...updates,
+    };
+  } else {
+    return res.status(400).json({ error: 'roomId or applyToAll is required' });
+  }
+
+  cal.rates[date] = day;
+  writeJSON(CAL_FILE, cal);
+  res.json({ ok: true, rate: day });
 });
 
 // Calendar bulk update
