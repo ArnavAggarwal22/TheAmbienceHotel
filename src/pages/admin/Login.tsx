@@ -12,13 +12,15 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const apiUrl = import.meta.env.VITE_ADMIN_API_URL || 'https://theambiencehotel.onrender.com';
+
   const handleLogin = async (e: any) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_ADMIN_API_URL}/auth/login`,
+        `${apiUrl}/auth/login`,
         {
           method: "POST",
           headers: {

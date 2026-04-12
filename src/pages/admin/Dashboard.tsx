@@ -14,12 +14,18 @@ type Stats = {
   upcomingAvailability: Array<{ id: string; name: string; available: boolean }>;
 };
 
+type CalendarData = {
+  rates: Record<string, any>;
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
+  const [calendar, setCalendar] = useState<CalendarData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const apiUrl = import.meta.env.VITE_ADMIN_API_URL || 'https://theambiencehotel.onrender.com';
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
@@ -35,29 +41,33 @@ const Dashboard = () => {
           'Content-Type': 'application/json',
         };
 
-        const [roomsRes, statsRes] = await Promise.all([
-          fetch(`${import.meta.env.VITE_ADMIN_API_URL}/rooms`, { headers }),
-          fetch(`${import.meta.env.VITE_ADMIN_API_URL}/stats`, { headers }),
+        const [roomsRes, statsRes, calendarRes] = await Promise.all([
+          fetch(`${apiUrl}/rooms`, { headers }),
+          fetch(`${apiUrl}/stats`, { headers }),
+          fetch(`${apiUrl}/calendar`, { headers }),
         ]);
 
-        if (roomsRes.status === 401 || statsRes.status === 401) {
+        if (roomsRes.status === 401 || statsRes.status === 401 || calendarRes.status === 401) {
           localStorage.removeItem('admin_token');
           navigate('/admin/login');
           return;
         }
 
-        if (!roomsRes.ok || !statsRes.ok) {
+        if (!roomsRes.ok || !statsRes.ok || !calendarRes.ok) {
           const roomsError = await roomsRes.text();
           const statsError = await statsRes.text();
-          setError(`Unable to load dashboard data: ${roomsError || statsError}`);
+          const calendarError = await calendarRes.text();
+          setError(`Unable to load dashboard data: ${roomsError || statsError || calendarError}`);
           return;
         }
 
         const roomsData = await roomsRes.json();
         const statsData = await statsRes.json();
+        const calendarData = await calendarRes.json();
 
         setRooms(roomsData || []);
         setStats(statsData || null);
+        setCalendar(calendarData || null);
       } catch (err) {
         console.error(err);
         setError('Unable to connect to backend.');
@@ -69,17 +79,31 @@ const Dashboard = () => {
     fetchData();
   }, [navigate]);
 
+  const handleLogout = () => {
+    localStorage.removeItem('admin_token');
+    navigate('/admin/login');
+  };
+
   console.log('Dashboard loaded');
 
   return (
     <main className="min-h-screen bg-slate-950 text-white px-6 py-10 md:px-10">
       <div className="mx-auto max-w-6xl">
-        <div className="rounded-[2rem] bg-slate-900/90 p-8 shadow-2xl shadow-black/30 ring-1 ring-white/5">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold tracking-tight text-white">Admin Dashboard 🚀</h1>
-            <p className="mt-3 text-sm text-slate-400">
-              Live hotel admin data from the backend. Rooms and stats are loaded from the Render API.
-            </p>
+        <div className="flex flex-col gap-6 rounded-[2rem] bg-slate-900/90 p-8 shadow-2xl shadow-black/30 ring-1 ring-white/5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h1 className="text-4xl font-bold tracking-tight text-white">Admin Dashboard 🚀</h1>
+              <p className="mt-3 text-sm text-slate-400">
+                Live hotel admin data from the backend. Rooms, stats, and calendar are loaded from the Render API.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="inline-flex items-center justify-center rounded-full bg-amber-500 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-400"
+            >
+              Logout
+            </button>
           </div>
 
           {loading ? (
@@ -92,7 +116,7 @@ const Dashboard = () => {
             </div>
           ) : (
             <>
-              <div className="grid gap-5 md:grid-cols-3">
+              <div className="grid gap-5 md:grid-cols-4">
                 <div className="rounded-3xl bg-slate-950/80 p-6">
                   <p className="text-sm uppercase tracking-[0.25em] text-slate-400">Total rooms</p>
                   <p className="mt-4 text-4xl font-semibold text-white">{stats?.totalRooms ?? rooms.length}</p>
@@ -106,6 +130,11 @@ const Dashboard = () => {
                 <div className="rounded-3xl bg-slate-950/80 p-6">
                   <p className="text-sm uppercase tracking-[0.25em] text-slate-400">Sold out dates</p>
                   <p className="mt-4 text-4xl font-semibold text-white">{stats?.soldOutDates.length ?? 0}</p>
+                </div>
+
+                <div className="rounded-3xl bg-slate-950/80 p-6">
+                  <p className="text-sm uppercase tracking-[0.25em] text-slate-400">Calendar entries</p>
+                  <p className="mt-4 text-4xl font-semibold text-white">{Object.keys(calendar?.rates || {}).length}</p>
                 </div>
               </div>
 

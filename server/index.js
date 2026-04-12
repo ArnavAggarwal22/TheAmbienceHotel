@@ -14,8 +14,8 @@ const DATA_DIR = path.join(__dirname, 'data');
 const ROOMS_FILE = path.join(DATA_DIR, 'rooms.json');
 const CAL_FILE = path.join(DATA_DIR, 'calendar.json');
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'arnavaggarwal3095@gmail.com';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'HiEveryone1';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'changeme';
 const JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'dev_secret';
 
 function readJSON(file) {
@@ -89,6 +89,11 @@ app.delete('/rooms/:id', verifyToken, (req, res) => {
 app.get('/stats', verifyToken, (req, res) => {
   const rooms = readJSON(ROOMS_FILE) || [];
   res.json({ totalRooms: rooms.length, soldOutDates: [], upcomingAvailability: rooms.map(r => ({ id: r.id, name: r.name, available: true })) });
+});
+
+app.get('/calendar', verifyToken, (req, res) => {
+  const calendar = readJSON(CAL_FILE) || { rates: {} };
+  res.json(calendar);
 });
 
 // Calendar bulk update
