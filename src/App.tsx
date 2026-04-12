@@ -81,6 +81,8 @@ function AppContent() {
     return () => clearTimeout(timer);
   }, []);
 
+  const isAdminRoute = location.pathname.startsWith('/admin');
+
   return (
     <>
       <AnimatePresence mode="wait">
@@ -89,7 +91,7 @@ function AppContent() {
       
       <div className={`transition-opacity duration-500 ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
         <ScrollToTop />
-        <Navbar />
+        {!isAdminRoute && <Navbar />}
         
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
@@ -103,8 +105,7 @@ function AppContent() {
             <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
           </Routes>
         </AnimatePresence>
-        
-        <Footer />
+        {!isAdminRoute && <Footer />}
         <Toaster position="top-center" />
       </div>
     </>
