@@ -16,7 +16,8 @@ import { Mail } from 'lucide-react';
 const RoomDetail = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
-  const room = ROOMS.find(r => r.id === roomId);
+  const [room, setRoom] = useState<typeof ROOMS[0] | null>(null);
+  const [loading, setLoading] = useState(true);
   
   const [currentImage, setCurrentImage] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -24,15 +25,54 @@ const RoomDetail = () => {
   const [checkOut, setCheckOut] = useState('');
   const [guests, setGuests] = useState('2');
   const [userEmail, setUserEmail] = useState('');
-const [userPhone, setUserPhone] = useState('');
+  const [userPhone, setUserPhone] = useState('');
 
 
   useEffect(() => {
-    if (!room) {
-      navigate('/');
+    const fetchRoom = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/public/rooms`);
+        if (response.ok) {
+          const rooms = await response.json();
+          const foundRoom = rooms.find((r: typeof ROOMS[0]) => r.id === roomId);
+          setRoom(foundRoom || null);
+        } else {
+          // Fallback to static data if API fails
+          const foundRoom = ROOMS.find(r => r.id === roomId);
+          setRoom(foundRoom || null);
+        }
+      } catch (error) {
+        console.error('Failed to fetch room:', error);
+        // Fallback to static data if API fails
+        const foundRoom = ROOMS.find(r => r.id === roomId);
+        setRoom(foundRoom || null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (roomId) {
+      fetchRoom();
     }
     window.scrollTo(0, 0);
-  }, [room, navigate]);
+  }, [roomId]);
+
+  useEffect(() => {
+    if (!loading && !room) {
+      navigate('/');
+    }
+  }, [room, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading room details...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!room) return null;
 

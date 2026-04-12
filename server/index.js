@@ -28,6 +28,17 @@ if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
 if (!fs.existsSync(ROOMS_FILE)) writeJSON(ROOMS_FILE, []);
 if (!fs.existsSync(CAL_FILE)) writeJSON(CAL_FILE, { rates: {} });
 
+// Public endpoints (no auth required)
+app.get('/public/rooms', (req, res) => {
+  const rooms = readJSON(ROOMS_FILE) || [];
+  res.json(rooms);
+});
+
+app.get('/public/calendar', (req, res) => {
+  const calendar = readJSON(CAL_FILE) || { rates: {} };
+  res.json(calendar);
+});
+
 // Auth
 app.post('/auth/login', (req, res) => {
   const { email, password } = req.body;

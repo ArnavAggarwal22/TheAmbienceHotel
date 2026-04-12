@@ -6,7 +6,7 @@ import {
   Star, Wifi, Car, Utensils, Coffee, Sparkles, Clock,
   Calendar, Users, Bed
 } from 'lucide-react';
-import { HOTEL_INFO, ROOMS, TESTIMONIALS, GALLERY_IMAGES, NEARBY_ATTRACTIONS } from '@/data/hotelData';
+import { HOTEL_INFO, TESTIMONIALS, GALLERY_IMAGES, NEARBY_ATTRACTIONS, ROOMS } from '@/data/hotelData';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 
 import hero1 from "../assets/hero1.jpeg";
@@ -371,6 +371,45 @@ const RoomCard = ({ room, index }: { room: typeof ROOMS[0]; index: number }) => 
 
 // Rooms Section
 const Rooms = () => {
+  const [rooms, setRooms] = useState<typeof ROOMS>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/public/rooms`);
+        if (response.ok) {
+          const data = await response.json();
+          setRooms(data);
+        } else {
+          // Fallback to static data if API fails
+          setRooms(ROOMS);
+        }
+      } catch (error) {
+        console.error('Failed to fetch rooms:', error);
+        // Fallback to static data if API fails
+        setRooms(ROOMS);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRooms();
+  }, []);
+
+  if (loading) {
+    return (
+      <section id="rooms" className="py-24 bg-white">
+        <div className="container mx-auto px-6">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
+            <p className="mt-4 text-slate-600">Loading rooms...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section id="rooms" className="py-24 bg-white">
       <div className="container mx-auto px-6">
@@ -404,7 +443,7 @@ const Rooms = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {ROOMS.map((room, index) => (
+          {rooms.map((room, index) => (
             <RoomCard key={room.id} room={room} index={index} />
           ))}
         </div>

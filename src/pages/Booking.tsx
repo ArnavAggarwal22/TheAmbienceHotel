@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 const Booking = () => {
   const [step, setStep] = useState(1);
   const [selectedRoom, _setSelectedRoom] = useState<string | null>(null);
+  const [rooms, setRooms] = useState<typeof ROOMS>([]);
+  const [loading, setLoading] = useState(true);
   const [bookingData, setBookingData] = useState({
     checkIn: '',
     checkOut: '',
@@ -21,6 +23,29 @@ const Booking = () => {
     specialRequests: ''
   });
 
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/public/rooms`);
+        if (response.ok) {
+          const data = await response.json();
+          setRooms(data);
+        } else {
+          // Fallback to static data if API fails
+          setRooms(ROOMS);
+        }
+      } catch (error) {
+        console.error('Failed to fetch rooms:', error);
+        // Fallback to static data if API fails
+        setRooms(ROOMS);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRooms();
+  }, []);
+
 
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -28,7 +53,7 @@ const Booking = () => {
     toast.success('Booking request submitted! We will contact you shortly to confirm.');
   };
 
-  const selectedRoomData = ROOMS.find(r => r.id === selectedRoom);
+  const selectedRoomData = rooms.find(r => r.id === selectedRoom);
 
   const calculateNights = () => {
     if (!bookingData.checkIn || !bookingData.checkOut) return 1;
@@ -43,6 +68,17 @@ const Booking = () => {
     if (!selectedRoomData) return 0;
     return selectedRoomData.priceValue * calculateNights();
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading booking options...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
