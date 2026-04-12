@@ -1,43 +1,53 @@
 require('dotenv').config();
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const multer = require('multer');
+const mongoose = require('mongoose');
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
-const DATA_DIR = path.join(__dirname, 'data');
-const ROOMS_FILE = path.join(DATA_DIR, 'rooms.json');
-const CAL_FILE = path.join(DATA_DIR, 'calendar.json');
+// MongoDB connection
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/theambiencehotel')
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'changeme';
-const JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'dev_secret';
-
-function readJSON(file) {
-  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { return null; }
-}
-function writeJSON(file, data) { fs.writeFileSync(file, JSON.stringify(data, null, 2)); }
-
-// ensure data files
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
-if (!fs.existsSync(ROOMS_FILE)) writeJSON(ROOMS_FILE, []);
-if (!fs.existsSync(CAL_FILE)) writeJSON(CAL_FILE, { rates: {} });
-
-// Public endpoints (no auth required)
-app.get('/public/rooms', (req, res) => {
-  const rooms = readJSON(ROOMS_FILE) || [];
-  res.json(rooms);
+// Room Schema
+const roomSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  basePrice: { type: Number, required: true },
+  size: String,
+  guests: String,
+  maxGuests: Number,
+  image: String,
+  gallery: [String],
+  features: [String],
+  description: String,
+  amenities: [String],
+  bedType: String,
+  view: String,
+  rating: Number,
+  reviews: Number
 });
 
-app.get('/public/calendar', (req, res) => {
-  const calendar = readJSON(CAL_FILE) || { rates: {} };
-  res.json(calendar);
+const Room = mongoose.model('Room', roomSchema);
+
+// Calendar Schema
+const calendarSchema = new mongoose.Schema({
+  date: { type: String, required: true, unique: true },
+  price: Number,
+  roomsLeft: Number,
+  soldOut: Boolean,
+  roomId: String
 });
+
+const Calendar = mongoose.model('Calendar', calendarSchema);
+
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@theambiencehotel.com';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production';
 
 // Auth
 app.post('/auth/login', (req, res) => {
@@ -61,148 +71,241 @@ function verifyToken(req, res, next) {
   } catch (e) { return res.status(401).json({ error: 'Invalid token' }); }
 }
 
-// Rooms
-app.get('/rooms', verifyToken, (req, res) => {
-  const rooms = readJSON(ROOMS_FILE) || [];
-  res.json(rooms);
-});
-
-app.get('/rooms/:id', verifyToken, (req, res) => {
-  const rooms = readJSON(ROOMS_FILE) || [];
-  const r = rooms.find(x => x.id === req.params.id);
-  if (!r) return res.status(404).json({});
-  res.json(r);
-});
-
-app.post('/rooms', verifyToken, (req, res) => {
-  const rooms = readJSON(ROOMS_FILE) || [];
-  const room = req.body;
-  if (!room.id) {
-    room.id = String(Date.now()) + '-' + Math.floor(Math.random()*10000);
-    rooms.push(room);
-    writeJSON(ROOMS_FILE, rooms);
-    return res.json({ ok: true, id: room.id });
-  }
-  const idx = rooms.findIndex(r => r.id === room.id);
-  if (idx >= 0) rooms[idx] = { ...rooms[idx], ...room };
-  else rooms.push(room);
-  writeJSON(ROOMS_FILE, rooms);
-  res.json({ ok: true });
-});
-
-app.post('/rooms/update', verifyToken, (req, res) => {
-  const { id, basePrice, name } = req.body;
-  if (!id) return res.status(400).json({ error: 'Room id is required' });
-  const rooms = readJSON(ROOMS_FILE) || [];
-  const idx = rooms.findIndex((r) => r.id === id);
-  if (idx === -1) return res.status(404).json({ error: 'Room not found' });
-  rooms[idx] = {
-    ...rooms[idx],
-    ...(basePrice !== undefined ? { basePrice } : {}),
-    ...(name !== undefined ? { name } : {}),
-  };
-  writeJSON(ROOMS_FILE, rooms);
-  res.json({ ok: true, room: rooms[idx] });
-});
-
-app.delete('/rooms/:id', verifyToken, (req, res) => {
-  const rooms = (readJSON(ROOMS_FILE) || []).filter(r => r.id !== req.params.id);
-  writeJSON(ROOMS_FILE, rooms);
-  res.json({ ok: true });
-});
-
-// Stats
-app.get('/stats', verifyToken, (req, res) => {
-  const rooms = readJSON(ROOMS_FILE) || [];
-  res.json({ totalRooms: rooms.length, soldOutDates: [], upcomingAvailability: rooms.map(r => ({ id: r.id, name: r.name, available: true })) });
-});
-
-app.get('/calendar', verifyToken, (req, res) => {
-  const calendar = readJSON(CAL_FILE) || { rates: {} };
-  res.json(calendar);
-});
-
-app.post('/calendar/update', verifyToken, (req, res) => {
-  const { date, price, roomsLeft, soldOut, applyToAll, roomId } = req.body;
-  if (!date) return res.status(400).json({ error: 'Date is required' });
-
-  const cal = readJSON(CAL_FILE) || { rates: {} };
-  const day = cal.rates[date] || {};
-
-  const updates = {};
-  if (price !== undefined) updates.price = price;
-  if (roomsLeft !== undefined) updates.roomsLeft = roomsLeft;
-  if (soldOut !== undefined) updates.soldOut = soldOut;
-
-  if (applyToAll) {
-    day._applyAll = {
-      ...day._applyAll,
-      ...updates,
-    };
-  } else if (roomId) {
-    day[roomId] = {
-      ...day[roomId],
-      ...updates,
-    };
-  } else {
-    return res.status(400).json({ error: 'roomId or applyToAll is required' });
-  }
-
-  cal.rates[date] = day;
-  writeJSON(CAL_FILE, cal);
-  res.json({ ok: true, rate: day });
-});
-
-// Calendar bulk update
-app.post('/calendar/bulk', verifyToken, (req, res) => {
-  // payload: { from, to, rooms: { roomId: { price?, soldOut?, roomsLeft? } }, applyToAll?: boolean }
-  const body = req.body;
-  const cal = readJSON(CAL_FILE) || { rates: {} };
-  const from = new Date(body.from);
-  const to = new Date(body.to);
-  if (isNaN(from.getTime()) || isNaN(to.getTime())) return res.status(400).json({ error: 'Invalid dates' });
-  for (let d = new Date(from); d <= to; d.setDate(d.getDate()+1)) {
-    const key = d.toISOString().slice(0,10);
-    cal.rates[key] = cal.rates[key] || {};
-    if (body.applyToAll) {
-      // set same rule for all rooms
-      cal.rates[key]._applyAll = body.rooms || {};
-    } else {
-      Object.keys(body.rooms || {}).forEach(roomId => {
-        cal.rates[key][roomId] = { ...(cal.rates[key][roomId]||{}), ...body.rooms[roomId] };
-      });
-    }
-  }
-  writeJSON(CAL_FILE, cal);
-  res.json({ ok: true });
-});
-
-// File upload (image)
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10*1024*1024 } });
-
-app.post('/upload', verifyToken, upload.single('file'), async (req, res) => {
+// Public endpoints (no auth required)
+app.get('/public/rooms', async (req, res) => {
   try {
-    const file = req.file;
-    if (!file) return res.status(400).json({ error: 'No file' });
-    // If CLOUDINARY_URL present, attempt to upload there
-    if (process.env.CLOUDINARY_URL) {
-      const cloudinary = require('cloudinary').v2;
-      cloudinary.config({ cloudinary_url: process.env.CLOUDINARY_URL });
-      const tmpPath = path.join(__dirname, 'data', 'tmp-' + Date.now() + '.bin');
-      fs.writeFileSync(tmpPath, file.buffer);
-      const result = await cloudinary.uploader.upload(tmpPath, { folder: 'hotel-admin' });
-      fs.unlinkSync(tmpPath);
-      return res.json({ url: result.secure_url });
-    }
-    // fallback: return data url
-    const base64 = file.buffer.toString('base64');
-    const dataUrl = `data:${file.mimetype};base64,${base64}`;
-    res.json({ url: dataUrl });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Upload failed' });
+    const rooms = await Room.find({});
+    // Convert basePrice to frontend format
+    const formattedRooms = rooms.map(room => ({
+      id: room.id,
+      name: room.name,
+      price: `₹${room.basePrice.toLocaleString('en-IN')}`,
+      priceValue: room.basePrice,
+      size: room.size,
+      guests: room.guests,
+      maxGuests: room.maxGuests,
+      image: room.image,
+      gallery: room.gallery,
+      features: room.features,
+      description: room.description,
+      amenities: room.amenities,
+      bedType: room.bedType,
+      view: room.view,
+      rating: room.rating,
+      reviews: room.reviews
+    }));
+    res.json(formattedRooms);
+  } catch (error) {
+    console.error('Error fetching rooms:', error);
+    res.status(500).json({ error: 'Failed to fetch rooms' });
   }
 });
 
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log('Admin backend listening on', PORT));
+app.get('/public/calendar', async (req, res) => {
+  try {
+    const calendar = await Calendar.find({});
+    const rates = {};
+    calendar.forEach(entry => {
+      rates[entry.date] = {
+        price: entry.price,
+        roomsLeft: entry.roomsLeft,
+        soldOut: entry.soldOut
+      };
+    });
+    res.json({ rates });
+  } catch (error) {
+    console.error('Error fetching calendar:', error);
+    res.status(500).json({ error: 'Failed to fetch calendar' });
+  }
+});
+
+// Admin endpoints (require auth)
+app.get('/rooms', verifyToken, async (req, res) => {
+  try {
+    const rooms = await Room.find({});
+    // Convert basePrice to frontend format
+    const formattedRooms = rooms.map(room => ({
+      id: room.id,
+      name: room.name,
+      price: `₹${room.basePrice.toLocaleString('en-IN')}`,
+      priceValue: room.basePrice,
+      size: room.size,
+      guests: room.guests,
+      maxGuests: room.maxGuests,
+      image: room.image,
+      gallery: room.gallery,
+      features: room.features,
+      description: room.description,
+      amenities: room.amenities,
+      bedType: room.bedType,
+      view: room.view,
+      rating: room.rating,
+      reviews: room.reviews
+    }));
+    res.json(formattedRooms);
+  } catch (error) {
+    console.error('Error fetching rooms:', error);
+    res.status(500).json({ error: 'Failed to fetch rooms' });
+  }
+});
+
+app.post('/rooms/update', verifyToken, async (req, res) => {
+  try {
+    const { id, basePrice, name } = req.body;
+    if (!id) return res.status(400).json({ error: 'Room id is required' });
+
+    const updateData = {};
+    if (basePrice !== undefined) updateData.basePrice = Number(basePrice);
+    if (name !== undefined) updateData.name = name;
+
+    const room = await Room.findOneAndUpdate(
+      { id },
+      updateData,
+      { new: true }
+    );
+
+    if (!room) return res.status(404).json({ error: 'Room not found' });
+
+    // Return formatted room data
+    const formattedRoom = {
+      id: room.id,
+      name: room.name,
+      price: `₹${room.basePrice.toLocaleString('en-IN')}`,
+      priceValue: room.basePrice,
+      size: room.size,
+      guests: room.guests,
+      maxGuests: room.maxGuests,
+      image: room.image,
+      gallery: room.gallery,
+      features: room.features,
+      description: room.description,
+      amenities: room.amenities,
+      bedType: room.bedType,
+      view: room.view,
+      rating: room.rating,
+      reviews: room.reviews
+    };
+
+    res.json({ ok: true, room: formattedRoom });
+  } catch (error) {
+    console.error('Error updating room:', error);
+    res.status(500).json({ error: 'Failed to update room' });
+  }
+});
+
+app.get('/calendar', verifyToken, async (req, res) => {
+  try {
+    const calendar = await Calendar.find({});
+    const rates = {};
+    calendar.forEach(entry => {
+      rates[entry.date] = {
+        price: entry.price,
+        roomsLeft: entry.roomsLeft,
+        soldOut: entry.soldOut
+      };
+    });
+    res.json({ rates });
+  } catch (error) {
+    console.error('Error fetching calendar:', error);
+    res.status(500).json({ error: 'Failed to fetch calendar' });
+  }
+});
+
+app.post('/calendar/update', verifyToken, async (req, res) => {
+  try {
+    const { date, price, roomsLeft, soldOut } = req.body;
+    if (!date) return res.status(400).json({ error: 'Date is required' });
+
+    const updateData = {};
+    if (price !== undefined) updateData.price = Number(price);
+    if (roomsLeft !== undefined) updateData.roomsLeft = Number(roomsLeft);
+    if (soldOut !== undefined) updateData.soldOut = Boolean(soldOut);
+
+    const calendarEntry = await Calendar.findOneAndUpdate(
+      { date },
+      updateData,
+      { upsert: true, new: true }
+    );
+
+    res.json({ ok: true, calendar: calendarEntry });
+  } catch (error) {
+    console.error('Error updating calendar:', error);
+    res.status(500).json({ error: 'Failed to update calendar' });
+  }
+});
+
+app.get('/stats', verifyToken, async (req, res) => {
+  try {
+    const totalRooms = await Room.countDocuments();
+    const calendarEntries = await Calendar.find({ soldOut: true });
+    const soldOutDates = calendarEntries.map(entry => entry.date);
+
+    res.json({
+      totalRooms,
+      soldOutDates,
+      upcomingAvailability: []
+    });
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+    res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+// Seed initial data
+async function seedData() {
+  try {
+    const roomCount = await Room.countDocuments();
+    if (roomCount === 0) {
+      console.log('Seeding initial room data...');
+      const initialRooms = [
+        {
+          id: "super-deluxe",
+          name: "Super Deluxe Room",
+          basePrice: 3099,
+          size: "200 sq ft",
+          guests: "2 Guests",
+          maxGuests: 2,
+          image: "/assets/sd1.jpeg",
+          gallery: ["/assets/sd1.jpeg", "/assets/sd2.jpeg", "/assets/sd3.jpeg"],
+          features: ["King Size Bed", "Breakfast Included", "City View", "Smart TV", "Rain Shower"],
+          description: "Indulge in the epitome of luxury with our Super Deluxe Room...",
+          amenities: ["Air Conditioning", "Mini Bar", "In-Room Safe", "Work Desk", "Coffee/Tea Maker", "Hair Dryer", "Bathrobes & Slippers", "Daily Housekeeping", "Room Service"],
+          bedType: "King Size Bed",
+          view: "City View",
+          rating: 4.9,
+          reviews: 128
+        },
+        {
+          id: "deluxe",
+          name: "Deluxe Room",
+          basePrice: 2799,
+          size: "180 sq ft",
+          guests: "2 Guests",
+          maxGuests: 2,
+          image: "/assets/d1.jpeg",
+          gallery: ["/assets/d1.jpeg", "/assets/d2.jpeg", "/assets/d3.jpeg"],
+          features: ["Queen Size Bed", "Breakfast Included", "City View", "Smart TV"],
+          description: "Experience comfort and elegance in our Deluxe Room...",
+          amenities: ["Air Conditioning", "In-Room Safe", "Work Desk", "Coffee/Tea Maker", "Hair Dryer", "Daily Housekeeping"],
+          bedType: "Queen Size Bed",
+          view: "City View",
+          rating: 4.7,
+          reviews: 95
+        }
+      ];
+
+      await Room.insertMany(initialRooms);
+      console.log('Room data seeded successfully');
+    }
+  } catch (error) {
+    console.error('Error seeding data:', error);
+  }
+}
+
+// Initialize data seeding
+seedData();
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
