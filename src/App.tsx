@@ -11,6 +11,7 @@ import Gallery from './pages/Gallery';
 import NotFound from './pages/NotFound';
 import Login from './pages/admin/Login';
 import Dashboard from './pages/admin/Dashboard';
+import Menu from './pages/Menu';
 import { Toaster } from '@/components/ui/sonner';
 
 
@@ -82,6 +83,7 @@ function AppContent() {
   }, []);
 
   const isAdminRoute = location.pathname.startsWith('/admin');
+  const isMenuRoute = location.pathname === '/menu';
 
   return (
     <>
@@ -91,7 +93,7 @@ function AppContent() {
       
       <div className={`transition-opacity duration-500 ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
         <ScrollToTop />
-        {!isAdminRoute && <Navbar />}
+        {!isAdminRoute && !isMenuRoute && <Navbar />}
         
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
@@ -102,10 +104,11 @@ function AppContent() {
             <Route path="/gallery" element={<PageTransition><Gallery /></PageTransition>} />
             <Route path="/admin/login" element={<PageTransition><Login /></PageTransition>} />
             <Route path="/admin/dashboard" element={<PageTransition><Dashboard /></PageTransition>} />
+            <Route path="/menu" element={<Menu />} />
             <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
           </Routes>
         </AnimatePresence>
-        {!isAdminRoute && <Footer />}
+        {!isAdminRoute && !isMenuRoute && <Footer />}
         <Toaster position="top-center" />
       </div>
     </>
