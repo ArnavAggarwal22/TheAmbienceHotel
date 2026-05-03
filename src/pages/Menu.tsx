@@ -13,7 +13,7 @@ const WHATSAPP_NUMBER = '918289099436';
 const NOTIFY_EMAILS = ['arnavaggarwal3095@gmail.com', 'info@theambiencehotel.com'];
 
 type CartMap = Record<string, number>;
-type CartItem = { id: string; name: string; price: number; qty: number };
+type CartItem = { id: string; name: string; price: number; qty: number; gst: number; finalPrice: number };
 
 // ─── Veg indicator ───────────────────────────────────────────────────────────
 const VegDot = ({ isVeg }: { isVeg: boolean }) => (
@@ -97,15 +97,17 @@ const OrderModal = ({
     if (phone.replace(/\D/g, '').length < 10) { toast.error('Enter a valid phone number'); return; }
     setLoading(true);
 
-    const orderLines = cartItems.map(i => `• ${i.name} x${i.qty} = ₹${i.price * i.qty}`).join('\n');
+    const orderLines = cartItems.map(i => `• ${i.name} x${i.qty} = ₹${Number(i.price).toFixed(2)} + GST ₹${Number(i.gst).toFixed(2)} = ₹${Number(i.finalPrice).toFixed(2)}`).join('\n');
     const orderRowsHtml = cartItems.map(i =>
       `<tr>
         <td style="padding:10px 16px;border-bottom:1px solid #FEF3C7;color:#1e293b;font-size:14px;">${i.name}</td>
         <td style="padding:10px 16px;border-bottom:1px solid #FEF3C7;color:#64748b;font-size:14px;text-align:center;">×${i.qty}</td>
-        <td style="padding:10px 16px;border-bottom:1px solid #FEF3C7;color:#d97706;font-size:14px;font-weight:700;text-align:right;">₹${i.price * i.qty}</td>
+        <td style="padding:10px 16px;border-bottom:1px solid #FEF3C7;color:#64748b;font-size:14px;text-align:right;">₹${Number(i.price).toFixed(2)}</td>
+        <td style="padding:10px 16px;border-bottom:1px solid #FEF3C7;color:#64748b;font-size:14px;text-align:right;">₹${Number(i.gst).toFixed(2)}</td>
+        <td style="padding:10px 16px;border-bottom:1px solid #FEF3C7;color:#d97706;font-size:14px;font-weight:700;text-align:right;">₹${Number(i.finalPrice).toFixed(2)}</td>
       </tr>`
     ).join('');
-    const waMsg = `🍽️ *New Order from Room ${room}*\n👤 Name: ${name}\n📞 Phone: ${phone}\n\n*Order:*\n${orderLines}\n\n💰 *Total: ₹${total}*\n_The Ambience Hotel_`;
+    const waMsg = `🍽️ *New Order from Room ${room}*\n👤 Name: ${name}\n📞 Phone: ${phone}\n\n*Order:*\n${orderLines}\n\n💰 *Total: ₹${Number(total).toFixed(2)}*\n_The Ambience Hotel_`;
 
     // Send to BOTH emails (failure of either doesn't block WhatsApp)
     const templateParams = {
@@ -115,7 +117,7 @@ const OrderModal = ({
       phone,
       order_details: orderLines,
       order_rows_html: orderRowsHtml,
-      total: `₹${total}`,
+      total: `₹${Number(total).toFixed(2)}`,
       message: `New room order from Room ${room}. Guest: ${name}, Phone: ${phone}`,
     };
 
@@ -153,17 +155,26 @@ const OrderModal = ({
           {/* Summary */}
           <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100">
             <p className="text-xs font-bold text-amber-600 uppercase tracking-widest mb-3">Your Order</p>
-            <div className="space-y-1.5 max-h-36 overflow-y-auto">
+            {/* Column headers */}
+            <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-2 pr-1">
+              <span>Item</span>
+              <span className="text-right">Price</span>
+              <span className="text-right">GST 5%</span>
+              <span className="text-right">Final</span>
+            </div>
+            <div className="space-y-1.5 max-h-44 overflow-y-auto">
               {cartItems.map(i => (
-                <div key={i.id} className="flex justify-between text-sm">
-                  <span className="text-gray-600 truncate pr-2">{i.name} <span className="text-gray-400">×{i.qty}</span></span>
-                  <span className="font-semibold text-gray-800 flex-shrink-0">₹{i.price * i.qty}</span>
+                <div key={i.id} className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 text-sm items-center">
+                  <span className="text-gray-600 truncate">{i.name} <span className="text-gray-400">×{i.qty}</span></span>
+                  <span className="text-gray-500 text-right flex-shrink-0">₹{Number(i.price).toFixed(2)}</span>
+                  <span className="text-gray-400 text-right flex-shrink-0">₹{Number(i.gst).toFixed(2)}</span>
+                  <span className="font-semibold text-gray-800 text-right flex-shrink-0">₹{Number(i.finalPrice).toFixed(2)}</span>
                 </div>
               ))}
             </div>
             <div className="border-t border-amber-200 mt-3 pt-3 flex justify-between">
-              <span className="font-bold text-gray-800">Total</span>
-              <span className="font-bold text-amber-600 text-lg">₹{total}</span>
+              <span className="font-bold text-gray-800">Total <span className="text-xs font-normal text-gray-400">(incl. GST)</span></span>
+              <span className="font-bold text-amber-600 text-lg">₹{Number(total).toFixed(2)}</span>
             </div>
           </div>
 
@@ -188,7 +199,7 @@ const OrderModal = ({
               {loading ? <><Loader2 size={18} className="animate-spin" /> Placing…</> :
                 <><ShoppingCart size={18} /> Place Order</>}
             </button>
-            <p className="text-center text-xs text-gray-400">WhatsApp will open · Our team confirms & delivers</p>
+            <p className="text-center text-xs text-gray-400">Our team will confirm & deliver to your room</p>
           </form>
         </div>
       </motion.div>
@@ -206,10 +217,10 @@ const SuccessScreen = ({ onReset }: { onReset: () => void }) => (
       <CheckCircle size={52} className="text-green-500" />
     </motion.div>
     <motion.h2 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-      className="text-2xl font-bold text-gray-800 mb-2">Order Sent! 🎉</motion.h2>
+      className="text-2xl font-bold text-gray-800 mb-2">Order Placed! 🎉</motion.h2>
     <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
       className="text-gray-500 text-sm max-w-xs mb-8">
-      Your order was sent via WhatsApp. We'll deliver to your room shortly!
+      Your order has been placed successfully. We'll deliver it to your room shortly.
     </motion.p>
     <motion.button initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
       onClick={onReset}
@@ -237,10 +248,15 @@ export default function Menu() {
   });
 
   const cartItems: CartItem[] = useMemo(() =>
-    MENU_ITEMS.filter(i => (cart[i.id] ?? 0) > 0).map(i => ({ id: i.id, name: i.name, price: i.price, qty: cart[i.id] })),
+    MENU_ITEMS.filter(i => (cart[i.id] ?? 0) > 0).map(i => {
+      const basePrice = i.price * cart[i.id];
+      const gst = Number((basePrice * 0.05).toFixed(2));
+      const finalPrice = Number((basePrice + gst).toFixed(2));
+      return { id: i.id, name: i.name, price: basePrice, qty: cart[i.id], gst, finalPrice };
+    }),
     [cart]);
   const totalItems = cartItems.reduce((s, i) => s + i.qty, 0);
-  const totalPrice = cartItems.reduce((s, i) => s + i.price * i.qty, 0);
+  const totalPrice = Number(cartItems.reduce((s, i) => s + i.finalPrice, 0).toFixed(2));
 
   // Search + filter logic
   const searchActive = search.trim().length > 0;
@@ -363,7 +379,7 @@ export default function Menu() {
                   <span className="text-sm">View Cart</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="font-black">₹{totalPrice}</span>
+                  <span className="font-black">₹{Number(totalPrice).toFixed(2)}</span>
                   <ShoppingCart size={18} />
                 </div>
               </button>
